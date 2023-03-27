@@ -6,9 +6,7 @@
 
 PS:
 
-* 书本官方技术网站：[https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices][source]
-
-[source]: https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices
+* 书本官方技术网站：https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices
 
 ### 构建
 
