@@ -1,0 +1,9 @@
+[book]
+authors = ["peter.dong <dynckm@gmail.com>"]
+language = "zh"
+multilingual = false
+src = "src"
+title = "Salesforce 集成模式与实践-中文版"
+
+
+
