@@ -1,12 +1,8 @@
 # Salesforce 集成模式与实践-简体中文版
 
-## 状态
+## 文档状态
 
-施工中。
-
-PS:
-
-* 书本官方技术网站：https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices
+施工中...
 
 ### 构建
 
@@ -23,3 +19,8 @@ clone 本项目, cd 到项目目录，然后启动服务(默认 http://localhost
 ```bash
 mdbook serve
 ```
+
+## 资源
+
+- 文档官方网站：https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices
+- Salesforce 社区: https://developer.salesforce.com/forums
