@@ -111,7 +111,7 @@
 下面的选择矩阵表列出了模式和它们的一些关键环节, 以帮助你确定哪种模式最适合你的集成要求. 使用下面这些维度对模式进行分类.
 
 <p align="center">
-    <img src="/img/pattern-selection-guide.png">
+    <img src="https://github.com/dyncan/Integration-Patterns-and-Practices-ZH_CN/blob/main/src/img/pattern-selection-guide.png?raw=true">
 </p>
 
 > **Note**
