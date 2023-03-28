@@ -101,7 +101,7 @@ Batch Apex job 执行一个同步的Apex SOAP或HTTP Call-out.
 此图说明了使用 Apex 进行同步远程进程调用.
 
 <p align="center">
-    <img src="/img/pattern-callout-to-remote-system-flow.png">
+    <img src="https://github.com/dyncan/Integration-Patterns-and-Practices-ZH_CN/blob/main/src/img/pattern-callout-to-remote-system-flow.png?raw=true">
 </p>
 
 执行流程:
