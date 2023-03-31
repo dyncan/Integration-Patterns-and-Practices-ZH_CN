@@ -24,3 +24,5 @@ mdbook serve
 
 - 文档官方网站：https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices
 - Salesforce 社区: https://developer.salesforce.com/forums
+
+如果你对文档有任何疑问或者有任何意见或建议的话, 请[联系我](mailto:translate.salesforce.techdocs@gmail.com), 随时可以交流沟通.
