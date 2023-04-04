@@ -16,3 +16,4 @@
 
 - [设计模式](design-pattern-catalog.md)
   - [远程系统调用-请求和回复](ch01-01-request-and-Reply.md)
+  - [远程系统调用-即发即弃](ch01-02-fire-and-forget.md)
