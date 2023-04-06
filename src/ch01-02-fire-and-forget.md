@@ -89,4 +89,210 @@
 可以在 Batch Job 中调用远程系统. 该解决方案允许批量执行远程进程, 并在 Salesforce 中处理来自远程系统的响应. 然而, 在给定的批处理上下文中, 调用数量存在限制. 有关更多信息, 请查看 [Salesforce Developer Limits and Allocations Quick Reference](https://developer.salesforce.com/docs/atlas.en-us.242.0.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_overview.htm)
 
 
+## Sketch
+
+以下图表说明了Salesforce向远程系统发起调用的情况, 其中对记录进行创建或更新操作会触发调用.
+
+<p align="center">
+    <img src="img/pattern-callout-to-fire-forget-flow.png?raw=true">
+</p>
+
+具体步骤: 
+
+1. 一个远程系统订阅了 Salesforce 平台事件.
+2. 更新或插入发生在 Salesforce 的一组特定记录上.
+3. 当满足一组条件时, Salesforce流程将被触发.
+4. 这个过程创建一个平台事件.
+5. 远程监听器接收事件消息, 并将消息放置在本地队列中.
+6. 排队的应用程序将消息转发给远程应用程序进行处理.
+
+在远程系统必须对 Salesforce 执行操作的情况下, 您可以实现一个可选的回调操作.
+
+## Results
+
+与此模式相关的解决方案的应用可以实现:
+
+- 用户界面发起的远程进程调用, 其事务结果可以显示给最终用户.
+- DML事件启动的远程进程调用, 其中事务的结果可以由调用进程处理.
+
+### Calling Mechanisms
+
+调用机制取决于为实现这一模式而选择的解决方案.
+
+| **调用机制**                                   | **说明**                                                                                                   |   |
+|---------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|---|
+| Process Builder                                         | 这适用于由流程驱动和定制驱动的解决方案使用. 事件触发 Salesforce 流程,然后该流程可以发布平台事件以供远程系统订阅. |   |
+| Lightning component or Visualforce and Apex controllers | 这适用于使用 Apex callout 异步调用一个远程进程.                                                                  |   |
+| Workflow rules                                          | 仅用于出站消息解决方案.创建和更新DML事件触发Salesforce工作流规则,然后可以将消息发送到远程系统.                 |   |
+| Apex triggers                                           | 用于触发器驱动的平台事件和从 DML 触发的事件中使用 Apex callout来调用远程进程.                                    |   |
+| Apex batch classes                                      | 用于在批处理模式下调用远程程序.                                                                                   |   |
+
+### Error Handling and Recovery
+
+处理错误和恢复策略必须作为整体解决方案的一部分进行考虑.最佳方法取决于您选择的解决方案.
+
+#### 方案一: Apex callouts	
+
+- **错误处理**: 远程系统交接最终进程的调用,因此调用仅处理远程服务的初始调用中的异常.例如,如果没有收到来自远程调用的肯定确认,则会触发超时事件.当初始调用被交接进行异步处理时,远程系统必须处理随后出现的错误.
+- **恢复**: 在这种情况下, 恢复更加复杂. 如果需求要求高质量的完成, 则必须创建自定义重试机制.
+
+#### 方案二: Outbound messaging	
+
+- **错误处理**: 因为此模式是异步的, 所以远程系统负责错误处理. 对于出站消息, 如果在超时期内未收到肯定的确认,则 Salesforce 发起重试操作, 时间最长为24小时.
+
+错误处理必须在远程服务中执行,因为该消息以 *fire-and-forget* 的方式有效地移交给远程系统.
+
+- **恢复**: 因为此模式是异步的,系统必须根据服务质量要求启动重试.对于出站消息,如果在超时时间内未从出站监听器收到肯定的确认,Salesforce 将启动重试,最长达24小时.重试间隔随时间呈指数增长, 从15秒间隔开始, 到60分钟间隔结束. 超时时间可以通过向 Salesforce 支持部门请求延长至七天, 但自动重试仅限于24小时. 所有24小时后失败的消息都将放置在队列中, 管理员必须监视此队列以查找超过24小时交付期限的任何消息, 并在必要时手动重试.
+
+
+#### 方案三: Platform Events	
+
+- **错误处理**: 错误处理必须由远程服务执行,因为该事件实际上已移交给远程系统进行进一步处理. 由于此模式是异步的, 因此远程系统处理消息排队,和错误处理等. 此外, 在数据库事务中无法处理平台事件. 因此, 发布的平台事件无法在事务内回滚.
+
+- **恢复**: 由于此模式是异步的, 因此远程系统必须根据服务的服务质量要求发起重试. 与每个事件相关联的 replay ID 是原子性的, 并随着每个已发布事件的增加而增加. 可以使用此 ID (例如,基于最后成功捕获的事件)来 replay 特定事件的流. 大容量平台事件消息存储时间为 72 小时(三天). 当使用 CometD 客户端订阅一个频道时, 可以检索过去的事件消息.
+
+### Idempotent Design Considerations(幂等性设计的注意事项)
+
+平台事件只会被发布到总线上一次. Salesforce 端不会进行重试. 请求重播事件取决于 ESB. 平台事件的 replay ID 保持不变, ESB 可以根据 replay ID 尝试重复消息.
+
+幂等性对于出站消息传递很重要, 因为它是异步的, 并且在未收到肯定确认时会启动重试. 因此, 远程服务必须能够以幂等方式处理来自 Salesforce 的消息.
+
+出站消息会为每个消息发送一个唯一的 ID, 任何重试都会保持这个 ID 不变. 远程系统可以基于这个唯一的 ID 跟踪重复的消息. 同时也会发送正在更新的每条记录的唯一记录 ID, 可以用来防止重复记录创建.
+
+*远程过程调用-请求和回复* 模式中的 [idempotent design considerations](ch01-01-request-and-Reply.html#idempotent-design-considerations) 也适用于这个模式.
+
+### Security Considerations
+
+任何对远程系统的调用必须保持请求的保密性,完整性和可用性. 根据你选择的解决方案, 适配不同的安全考虑因素.
+
+#### 方案一: Apex callouts
+
+对远程系统的调用必须保持请求的保密性,完整性和可用性.以下是在这种模式下使用 Apex SOAP 和 HTTP 调用的具体安全考虑:
+
+- 单向SSL默认启用, 但支持使用自签名和CA签名证书来实现双向SSL, 以维护客户端和服务器的真实性.
+- Salesforce 目前并不支持 WS-Security.
+- 必要时,考虑使用 [Apex Crypto](https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_classes_restful_crypto.htm) 类方法中的单向哈希或数字签名,以确保请求的完整性.
+- 必须通过实施适当的防火墙机制来保护远程系统.
+
+> **Web Service 安全性(WS-Security)** 描述了对 SOAP 消息传递的改进, 即通过消息完整性,消息机密性以及单一消息认证提供保护功能.  WS-Security 机制可用于采纳各种安全模型和加密技术.
+>
+> WS-Security 是一个消息级别的标准, 主要用于通过 XML 数字签名保护 SOAP 消息, 通过 XML 加密保护机密性以及通过安全性令牌保护凭证传播. Web Service 安全性规范定义了保护消息完整性和机密性的功能,并且提供了使安全相关声明与消息关联的机制.
+>
+> WS-Security 为安全性令牌与消息的关联提供了一个通用机制. WS-Security 不需要任何特定类型的安全性令牌. 它具有可扩展性, 例如,支持多种安全性令牌格式.
+
+#### 方案二: Outbound Messaging
+
+对于出站消息, 默认启用了单向SSL. 但是, 双向 SSL 可以与 Salesforce outbound messaging 证书一起使用.
+
+以下是一些额外的安全考虑因素:
+
+- 为远程集成服务器添加 Salesforce 服务器 IP 范围到白名单中.
+- 通过实施适当的防火墙机制来保护远程系统.
+
+#### 方案三: Platform Events
+
+对于平台事件, 订阅的外部系统必须能够对 Salesforce streaming API 进行认证.
+
+平台事件遵循在 Salesforce 组织中配置的现有安全模型. 要订阅事件, 用户需要对事件实体具有读取访问权限. 要发布事件, 用户需要在事件实体上具有创建权限.
+
+## Sidebars
+
+### Timeliness
+
+对于即发即弃模式,及时性不是一个重要因素. 控制权立即或在成功将消息交付到远程系统后得到积极确认后即返回给客户端. 对于 Salesforce 出站消息, 确认必须在 24 小时内发生(可以延长到 7 天); 否则, 消息过期. 对于平台事件, Salesforce 将事件发送到事件总线, 而不等待订阅者的确认. 如果订阅者没有收到消息, 订阅者可以使用事件 reply ID 请求重播事件. 事件消息会存储 72 小时(三天). 要检索过去的事件消息, 请使用 CometD 客户端订阅频道.
+
+### Data Volumes
+
+数据量的考虑取决于您选择的解决方案.关于每个解决方案的限制,请参考 [Salesforce Limits Quick Reference Guide](https://developer.salesforce.com/docs/atlas.en-us.242.0.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_overview.htm).
+
+### Endpoint Capability and Standards Support
+
+对 Endpoint 的能力和标准支持取决于你选择的解决方案.
+
+#### 方案一: Apex SOAP callouts
+
+**考虑因素:**
+
+该端点必须能够通过 HTTP 处理 Web 服务调用. Salesforce 必须能够通过公共互联网访问该端点.
+
+这个解决方案要求远程系统与 Salesforce 所支持的标准兼容. 在撰写本文时,Salesforce 为 Apex SOAP call-outs 所支持的网络服务标准是:
+
+- WSDL 1.1
+- SOAP 1.1
+- WSI-Basic Profile 1.1
+- HTTP
+
+#### 方案二: Apex HTTP callouts
+
+**考虑因素:**
+
+该端点必须能够接收 HTTP 调用.Salesforce 必须能够通过公共互联网访问该端点. 
+
+你可以使用 Apex 的 HTTP call-out, 使用标准的 GET, POST, PUT和 DELETE 方法来调用 REST 服务. 
+
+#### 方案三: Outbound message
+
+**考虑因素:**
+
+- 该端点必须能够实现一个监听器,能够接收从 Salesforce 发送的预定义格式的 SOAP 消息.
+- 远程监听器必须参与契约优先的规则,其中规则由 Salesforce 提供.
+- 每个出站消息都有自己预定义的 WSDL.
+
+#### 方案四: Platform Events
+
+- 触发器, 流可以订阅事件. 无论事件是如何发布的, 你都可以收到事件通知.
+- 使用 CometD 从外部客户端订阅平台事件. 实现自己的 CometD 客户端或使用 EMP Connector, 这是一个开源的, 由社区支持的工具, 它实现了连接到 CometD 并监听通道的所有细节. Salesforce 按照接收顺序依次向 CometD 客户端发送平台事件. 事件通知的顺序基于事件的 replay ID.
+
+### State Management
+
+在集成系统时, 唯一键对于持续状态的跟踪是很重要的. 这里有两个选项:
+
+- Salesforce 存储远程系统的主键或唯一标识符来标识远程记录.
+- 远程系统存储 Salesforce 唯一的记录ID或其他唯一的标识符.
+
+下表列出了这种模式下状态管理的注意事项:
+
+| **Master System** | **Description**                                                                        |
+|-------------------|----------------------------------------------------------------------------------------|
+| Salesforce        | 远程系统存储 Salesforce 的 RecordId 或其他一些来自记录的唯一键.                         |
+| Remote system     | Salesforce 必须在远程系统中存储一个唯一标识符的引用.因为这个过程是异步的,存储这个唯一标识符不能成为原始事务的一部分. <br/><br/>Salesforce 在调用远程过程时必须提供唯一ID. 然后, 远程系统必须通过回调方式调用 Salesforce, 使用 Salesforce 的唯一ID来更新 Salesforce 中的记录以存储该远程系统的唯一标识符. <br/><br/> 回调意味着在远程应用程序中进行特定的状态处理,以存储该事务的 Salesforce 唯一标识符, 以便在处理完成后用于回调, 或者 Salesforce 唯一标识符存储在远程系统的记录中.|
+
+### Complex Integration Scenarios
+
+这个模式中的每个解决方案对复杂的集成场景都有不同的考虑:
+
+#### 方案一: Apex Callout
+
+在某些情况下,该模式规定的解决方案可能需要实现多个复杂的集成方案. 最好使用中间件或让 Salesforce 调用一个组合服务来实现. 这些场景包括: 
+
+- 涉及复杂流程逻辑的业务流程和规则的编排
+- 对多个系统的调用及其结果进行汇总
+- 入站和出站消息的转换
+- 在对多个系统的调用之间保持事务完整性
+
+#### 方案二: Outbound messaging	
+
+鉴于出站消息的静态,声明性质, 在 Salesforce 中不能执行复杂的集成方案, 如聚合,协调或转换. 远程系统或中间件必须处理这些类型的操作.
+
+#### 方案三: Platform Events	
+
+鉴于事件的静态,声明性质, 在 Salesforce 中不能执行复杂的集成方案, 如聚合,协调或转换. 远程系统或中间件必须处理这些类型的操作.
+
+### Governor Limits
+
+由于Salesforce平台是多租户的性质, 因此对于出站调用存在一些限制. 这些限制取决于出站调用的类型和调用的时间.
+
+如果是平台事件, 适用不同的限制和分配. 参考[Platforms Events Developer Guide.](https://developer.salesforce.com/docs/atlas.en-us.242.0.platform_events.meta/platform_events/platform_events_intro.htm).
+
+出站消息没有具体的限制. 参考[Salesforce Limits Quick Reference Guide](https://developer.salesforce.com/docs/atlas.en-us.242.0.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_overview.htm).
+
+### Reliable Messaging
+
+可靠的消息传递试图解决保证向远程系统传递消息的问题, 其中的各个组件是不可靠的. 确保远程系统收到消息的方法取决于你选择的解决方案.
+
+
+
+
+
+
 
