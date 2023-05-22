@@ -5,12 +5,12 @@
 ## Integration Patterns Overview
 
 - [概述](integration-patterns-overview.md)
-  - [Purpose and Scope](ch01-01-purpose-and-scope.md)
-  - [Pattern Template](ch01-02-pattern-template.md)
-  - [Pattern Summary](ch01-03-pattern-Summary.md)
-  - [Pattern Approach](ch01-04-pattern-approach.md)
-  - [Pattern Selection Guide](ch01-05-pattern-selection-guide.md)
-  - [Middleware Terms and Definitions](ch01-06-middleware-terms-and-definitions.md)
+  - [目的和范围](ch01-01-purpose-and-scope.md)
+  - [集成模式模板](ch01-02-pattern-template.md)
+  - [集成模式概述](ch01-03-pattern-Summary.md)
+  - [集成模式分类](ch01-04-pattern-approach.md)
+  - [集成模式选择指南](ch01-05-pattern-selection-guide.md)
+  - [中间件的术语和定义](ch01-06-middleware-terms-and-definitions.md)
 
 ## Design Pattern
 
