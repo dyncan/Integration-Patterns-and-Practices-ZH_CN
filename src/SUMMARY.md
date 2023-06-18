@@ -20,3 +20,4 @@
   - [批量数据同步](ch01-03-batch-data-synchronization.md)
   - [远程系统请求呼入](ch01-04-remote-call-in.md)
   - [基于数据变化的UI更新](ch01-05-UI-update-based-on-data-changes.md)
+  - [数据可视化](ch01-05-data-virtualization.md)
