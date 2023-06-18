@@ -1,0 +1,6 @@
+# 资源-外部
+
+1. Hohpe, Gregor, and Bobby Woolf. [Enterprise Integration Patterns](http://www.amazon.com/Enterprise-Integration-Patterns-Designing-Deploying/dp/0321200683/ref=sr_1_1?s=books&ie=UTF8&qid=1337717676&sr=1-1). Boston: Addison-Wesley Professional, 2003.
+2. Microsoft Corporation. [Integration Patterns (Patterns & Practices)](http://www.amazon.com/Integration-Patterns-Practices-Microsoft-Corporation/dp/073561850X/ref=sr_1_2?s=books&ie=UTF8&qid=1337717848&sr=1-2). Redmond: Microsoft Press, 2004.
+3. _Synchronous vs. Asynchronous Communication in Applications Integration,_ MuleSoft, last accessed March 18, 2019, [https://www.mulesoft.com/resources/esb/applications-integration](https://www.mulesoft.com/resources/esb/applications-integration).
+4. _Hub and Spoke [or] Zen and the Art of Message Broker Maintenance,_ Enterprise Integration Patterns, last accessed March 18, 2019, [http://www.eaipatterns.com/ramblings/03_hubandspoke.html](http://www.eaipatterns.com/ramblings/03_hubandspoke.html).

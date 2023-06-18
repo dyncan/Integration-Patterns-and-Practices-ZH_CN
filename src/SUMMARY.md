@@ -21,3 +21,11 @@
   - [远程系统请求呼入](ch01-04-remote-call-in.md)
   - [基于数据变化的UI更新](ch01-05-UI-update-based-on-data-changes.md)
   - [数据可视化](ch01-05-data-virtualization.md)
+
+## Appendices
+
+- [附录](Appendices.md)
+  - [资源-外部](ch01-01-Resources—External.md)
+  - [资源-Salesforce](ch01-02-Resources—Salesforce.md)
+  - [安全方面的考虑](ch01-03-Security-Considerations.md)
+  - [事件驱动架构](ch01-04-Event-Driven-Architecture.md)
